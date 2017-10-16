@@ -18,6 +18,7 @@
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <pwd.h>
@@ -250,6 +251,12 @@ int pam_sm_authenticate(pam_handle_t * pamh, int flags, int argc,
     retval = do_authentication(cfg, devices, n_devices, pamh);
   } else {
     retval = do_manual_authentication(cfg, devices, n_devices, pamh);
+  }
+
+  // Touch auth_file to indicate that authentication is completed
+  int fd = open(cfg->auth_file, O_RDONLY, 0);
+  if (fd >= 0) {
+    close(fd);
   }
 
   if (retval != 1) {
