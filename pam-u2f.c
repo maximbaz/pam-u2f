@@ -297,7 +297,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
     if (!buf) {
       DBG("Unable to allocate memory for the lock file, touch request notifications will be disabled");
     } else {
-      snprintf(buf, lock_file_length, "%s%d%s", run_folder, getuid(), lock_file_name);
+      snprintf(buf, lock_file_length, "%s%d%s", run_folder, uid, lock_file_name);
       cfg->lock_file = buf; /* cfg takes ownership */
       buf = NULL;
 
