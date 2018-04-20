@@ -54,6 +54,8 @@ static void parse_cfg(int flags, int argc, const char **argv, cfg_t *cfg) {
       cfg->cue = 1;
     if (strncmp(argv[i], "authfile=", 9) == 0)
       cfg->auth_file = argv[i] + 9;
+    if (strncmp(argv[i], "lockfile=", 9) == 0)
+      cfg->lock_file = argv[i] + 9;
     if (strncmp(argv[i], "origin=", 7) == 0)
       cfg->origin = argv[i] + 7;
     if (strncmp(argv[i], "appid=", 6) == 0)
@@ -101,6 +103,7 @@ static void parse_cfg(int flags, int argc, const char **argv, cfg_t *cfg) {
     D(cfg->debug_file, "openasuser=%d", cfg->openasuser);
     D(cfg->debug_file, "alwaysok=%d", cfg->alwaysok);
     D(cfg->debug_file, "authfile=%s", cfg->auth_file ? cfg->auth_file : "(null)");
+    D(cfg->debug_file, "lockfile=%s", cfg->lock_file ? cfg->lock_file : "(null)");
     D(cfg->debug_file, "origin=%s", cfg->origin ? cfg->origin : "(null)");
     D(cfg->debug_file, "appid=%s", cfg->appid ? cfg->appid : "(null)");
     D(cfg->debug_file, "prompt=%s", cfg->prompt ? cfg->prompt : "(null)");
@@ -279,20 +282,37 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
     }
   }
 
+  // Determine the lock file path for touch request notifications
+  if (!cfg->lock_file) {
+    buf = NULL;
+
+    char *run_folder = "/var/run/user/";
+    uid_t uid = getuid();
+    char *lock_file_name = "/pam-u2f-touch";
+
+    int uid_length = snprintf(NULL, 0, "%d", uid);
+    size_t lock_file_length = strlen(run_folder) + uid_length + strlen(lock_file_name) + 1;
+    buf = malloc(sizeof(char) * lock_file_length);
+
+    if (!buf) {
+      DBG("Unable to allocate memory for the lock file, touch request notifications will be disabled");
+    } else {
+      snprintf(buf, lock_file_length, "%s%d%s", run_folder, getuid(), lock_file_name);
+      cfg->lock_file = buf; /* cfg takes ownership */
+      buf = NULL;
+
+      DBG("Using lock file '%s' for touch request notifications", cfg->lock_file);
+    }
+  } else {
+    if (strlen(cfg->lock_file) == 0) {
+      DBG("Lock file is not set, touch request notifications are disabled");
+    } else {
+      DBG("Using lock file '%s' for touch request notifications", cfg->lock_file);
+    }
+  }
+
   // Open the lock file to indicate that we are waiting for a touch
-  char uid[12];
-  sprintf(uid, "%d", getuid());
-  char *run_folder = "/var/run/user/";
-  char *pam_u2f_touch = "/pam-u2f-touch";
-
-  size_t lock_file_path_length = strlen(run_folder) + strlen(uid) + strlen(pam_u2f_touch);
-  char *lock_file_path = malloc(sizeof(char) * lock_file_path_length);
-  strcpy(lock_file_path, run_folder);
-  strcat(lock_file_path, uid);
-  strcat(lock_file_path, pam_u2f_touch);
-
-  int lock_file = open(lock_file_path, O_RDONLY | O_CREAT, 0664);
-  free(lock_file_path);
+  int lock_file = open(cfg->lock_file, O_RDONLY | O_CREAT, 0664);
 
   if (cfg->manual == 0) {
     if (cfg->interactive) {

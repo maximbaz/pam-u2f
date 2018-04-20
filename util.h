@@ -38,6 +38,7 @@ typedef struct {
   int interactive;
   int cue;
   const char *auth_file;
+  const char *lock_file;
   const char *origin;
   const char *appid;
   const char *prompt;
