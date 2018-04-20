@@ -291,7 +291,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
   strcat(lock_file_path, uid);
   strcat(lock_file_path, pam_u2f_touch);
 
-  int lock_file = open(lock_file_path, O_RDONLY | O_CREAT, 0);
+  int lock_file = open(lock_file_path, O_RDONLY | O_CREAT, 0664);
   free(lock_file_path);
 
   if (cfg->manual == 0) {
