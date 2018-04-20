@@ -279,22 +279,20 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
     }
   }
 
-  // Create a marker file to indicate that we are waiting for a touch
+  // Open the lock file to indicate that we are waiting for a touch
   char uid[12];
   sprintf(uid, "%d", getuid());
   char *run_folder = "/var/run/user/";
   char *pam_u2f_touch = "/pam-u2f-touch";
 
-  size_t marker_file_path_length = strlen(run_folder) + strlen(uid) + strlen(pam_u2f_touch);
-  char *marker_file_path = malloc(sizeof(char) * marker_file_path_length);
-  strcpy(marker_file_path, run_folder);
-  strcat(marker_file_path, uid);
-  strcat(marker_file_path, pam_u2f_touch);
+  size_t lock_file_path_length = strlen(run_folder) + strlen(uid) + strlen(pam_u2f_touch);
+  char *lock_file_path = malloc(sizeof(char) * lock_file_path_length);
+  strcpy(lock_file_path, run_folder);
+  strcat(lock_file_path, uid);
+  strcat(lock_file_path, pam_u2f_touch);
 
-  int marker_file = open(marker_file_path, O_RDONLY | O_CREAT, 0);
-  if (marker_file >= 0) {
-    close(marker_file);
-  }
+  int lock_file = open(lock_file_path, O_RDONLY | O_CREAT, 0);
+  free(lock_file_path);
 
   if (cfg->manual == 0) {
     if (cfg->interactive) {
@@ -307,9 +305,10 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
     retval = do_manual_authentication(cfg, devices, n_devices, pamh);
   }
 
-  // Remove a marker file to indicate that we are no longer waiting for a touch
-  remove(marker_file_path);
-  free(marker_file_path);
+  // Close the lock file to indicate that we are no longer waiting for a touch
+  if (lock_file >= 0) {
+    close(lock_file);
+  }
 
   if (retval != 1) {
     DBG("do_authentication returned %d", retval);
