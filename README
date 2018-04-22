@@ -100,7 +100,7 @@ Set the location of the file that is used for touch request notifications.
 This file will be opened when pam-u2f starts waiting for a user to touch the device,
 and will be closed when it no longer waits for a touch.
 Use inotify to listen on these events, or a more high-level tool like https://github.com/maximbaz/yubikey-touch-detector[yubikey-touch-detector].
-Default value: /var/run/$UID/pam-u2f-touch
+Default value: /var/run/user/$UID/pam-u2f-touch
 
 nouserok::
 Set to enable authentication attempts to succeed even if the user trying to
