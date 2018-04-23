@@ -16,7 +16,7 @@
 #define DEVSIZE (((PK_LEN) + (KH_LEN) + (RD_LEN)))
 #define DEFAULT_AUTHFILE_DIR_VAR "XDG_CONFIG_HOME"
 #define DEFAULT_AUTHFILE "/Yubico/u2f_keys"
-#define DEFAULT_TOUCHFILE_PATH "/var/run/user/%d/pam-u2f-touch"
+#define DEFAULT_AUTHPENDING_FILE_PATH "/var/run/user/%d/pam-u2f-authpending"
 #define DEFAULT_PROMPT "Insert your U2F device, then press ENTER."
 #define DEFAULT_CUE "Please touch the device."
 #define DEFAULT_ORIGIN_PREFIX "pam://"
@@ -39,7 +39,7 @@ typedef struct {
   int interactive;
   int cue;
   const char *auth_file;
-  const char *lock_file;
+  const char *authpending_file;
   const char *origin;
   const char *appid;
   const char *prompt;
