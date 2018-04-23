@@ -282,6 +282,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
     }
   }
 
+  int emit_touch_notifications = 1;
+
   // Determine the lock file path for touch request notifications
   if (!cfg->lock_file) {
     buf = NULL;
@@ -306,13 +308,21 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
   } else {
     if (strlen(cfg->lock_file) == 0) {
       DBG("Lock file is not set, touch request notifications are disabled");
+      emit_touch_notifications = 0;
     } else {
       DBG("Using lock file '%s' for touch request notifications", cfg->lock_file);
     }
   }
 
-  // Open the lock file to indicate that we are waiting for a touch
-  int lock_file = open(cfg->lock_file, O_RDONLY | O_CREAT, 0664);
+  int lock_file = -1;
+  if (emit_touch_notifications) {
+    // Open the lock file to indicate that we are waiting for a touch
+    lock_file = open(cfg->lock_file, O_RDONLY | O_CREAT, 0664);
+    if (lock_file < 0) {
+      DBG("Unable to emit notification for 'authentication started' by opening the lock file '%s', (%s)",
+          cfg->lock_file, strerror(errno));
+    }
+  }
 
   if (cfg->manual == 0) {
     if (cfg->interactive) {
@@ -327,7 +337,10 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
 
   // Close the lock file to indicate that we are no longer waiting for a touch
   if (lock_file >= 0) {
-    close(lock_file);
+    if (close(lock_file) < 0) {
+      DBG("Unable to emit notification for 'authentication stopped' by closing the lock file '%s', (%s)",
+          cfg->lock_file, strerror(errno));
+    }
   }
 
   if (retval != 1) {
