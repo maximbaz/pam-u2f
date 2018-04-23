@@ -136,6 +136,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
   device_t *devices = NULL;
   unsigned n_devices = 0;
   int openasuser;
+  int should_free_authpending_file = 1;
 
   parse_cfg(flags, argc, argv, cfg);
 
@@ -282,23 +283,21 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
     }
   }
 
-  int should_free_authpending_file = 0;
   // Determine the full path for authpending_file in order to emit touch request notifications
   if (!cfg->authpending_file) {
-    size_t actual_size = snprintf(buffer, BUFSIZE, DEFAULT_AUTHPENDING_FILE_PATH, getuid());
+    int actual_size = snprintf(buffer, BUFSIZE, DEFAULT_AUTHPENDING_FILE_PATH, getuid());
     if (actual_size >= 0 && actual_size < BUFSIZE) {
       cfg->authpending_file = strdup(buffer);
-      if (cfg->authpending_file) {
-        should_free_authpending_file = 1;
-      }
     }
     if (!cfg->authpending_file) {
       DBG("Unable to allocate memory for the authpending_file, touch request notifications will not be emitted");
+      should_free_authpending_file = 0;
     }
   } else {
     if (strlen(cfg->authpending_file) == 0) {
       DBG("authpending_file is set to an empty value, touch request notifications will be disabled");
       cfg->authpending_file = NULL;
+      should_free_authpending_file = 0;
     }
   }
 
@@ -349,10 +348,8 @@ done:
     buf = NULL;
   }
 
-  if (cfg->authpending_file) {
-    if (should_free_authpending_file) {
-      free(cfg->authpending_file);
-    }
+  if (should_free_authpending_file) {
+    free(cfg->authpending_file);
     cfg->authpending_file = NULL;
   }
 
