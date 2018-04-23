@@ -285,7 +285,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
 
   // Determine the full path for authpending_file in order to emit touch request notifications
   if (!cfg->authpending_file) {
-    int actual_size = snprintf(buffer, BUFSIZE, DEFAULT_AUTHPENDING_FILE_PATH, getuid());
+    int actual_size = snprintf(buffer, BUFSIZE, DEFAULT_AUTHPENDING_FILE_PATH, geteuid());
     if (actual_size >= 0 && actual_size < BUFSIZE) {
       cfg->authpending_file = strdup(buffer);
     }
