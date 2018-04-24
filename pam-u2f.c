@@ -294,10 +294,10 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc,
       should_free_authpending_file = 0;
     }
   } else {
+    should_free_authpending_file = 0;
     if (strlen(cfg->authpending_file) == 0) {
       DBG("authpending_file is set to an empty value, touch request notifications will be disabled");
       cfg->authpending_file = NULL;
-      should_free_authpending_file = 0;
     }
   }
 
